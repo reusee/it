@@ -7,8 +7,6 @@ import (
 )
 
 type (
-	any = interface{}
-
 	Scope = dscope.Scope
 	Src   = pp.Src
 	Sink  = pp.Sink
