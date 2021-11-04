@@ -1,6 +1,8 @@
 package it
 
 import (
+	"fmt"
+
 	"github.com/reusee/dscope"
 	"github.com/reusee/e4"
 	"github.com/reusee/pp"
@@ -14,4 +16,5 @@ type (
 
 var (
 	we = e4.Wrap
+	pt = fmt.Printf
 )

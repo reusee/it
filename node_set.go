@@ -42,20 +42,16 @@ func (n *NodeSet) Mutate(
 		return nil, we(ErrNotFound)
 	}
 
-	name := path[0]
-	if name == "" || name == "." || name == ".." {
-		return nil, we(ErrInvalidPath)
-	}
-
 	var nodes []Node
 	if n != nil {
 		nodes = n.Nodes
 	}
+	key := path[0]
 
 	// search
 	i := sort.Search(len(nodes), func(i int) bool {
 		min, _ := nodes[i].KeyRange()
-		return Compare(min, name) >= 0
+		return Compare(min, key) >= 0
 	})
 
 	if i == len(nodes) {
@@ -72,14 +68,21 @@ func (n *NodeSet) Mutate(
 			newNodes := make([]Node, len(nodes), len(nodes)+1)
 			copy(newNodes, nodes)
 			newNodes = append(newNodes, newNode)
+			if !sort.SliceIsSorted(newNodes, func(i, j int) bool {
+				min1, _ := newNodes[i].KeyRange()
+				min2, _ := newNodes[i].KeyRange()
+				return Compare(min1, min2) < 0
+			}) {
+				return nil, we(ErrBadOrder)
+			}
 			return NewNodeSet(newNodes), nil
 		}
 		// not changed
 		return n, nil
 	}
 
-	minName, maxName := nodes[i].KeyRange()
-	if Compare(name, minName) < 0 {
+	min, max := nodes[i].KeyRange()
+	if Compare(key, min) < 0 {
 		// not found
 		if len(path) > 1 {
 			return nil, we(ErrNotFound)
@@ -94,15 +97,22 @@ func (n *NodeSet) Mutate(
 			newNodes = append(newNodes, nodes[:i]...)
 			newNodes = append(newNodes, newNode)
 			newNodes = append(newNodes, nodes[i:]...)
+			if !sort.SliceIsSorted(newNodes, func(i, j int) bool {
+				min1, _ := newNodes[i].KeyRange()
+				min2, _ := newNodes[i].KeyRange()
+				return Compare(min1, min2) < 0
+			}) {
+				return nil, we(ErrBadOrder)
+			}
 			return NewNodeSet(newNodes), nil
 		}
 		// not changed
 		return n, nil
 
-	} else if Compare(minName, name) <= 0 && Compare(name, maxName) <= 0 {
+	} else if Compare(min, key) <= 0 && Compare(key, max) <= 0 {
 		// in range
 		var newNode Node
-		if minName == name && maxName == name {
+		if min == key && max == key {
 			// exactly
 			newNode, err = nodes[i].Mutate(ctx, path[1:], fn)
 		} else {
@@ -122,14 +132,21 @@ func (n *NodeSet) Mutate(
 
 		} else if newNode != nodes[i] {
 			// replace
-			newMinName, newMaxName := newNode.KeyRange()
-			if newMinName != minName || newMaxName != maxName {
+			newMin, newMax := newNode.KeyRange()
+			if newMin != min || newMax != max {
 				return nil, we(ErrInvalidName)
 			}
 			newNodes := make([]Node, 0, len(nodes))
 			newNodes = append(newNodes, nodes[:i]...)
 			newNodes = append(newNodes, newNode)
 			newNodes = append(newNodes, nodes[i+1:]...)
+			if !sort.SliceIsSorted(newNodes, func(i, j int) bool {
+				min1, _ := newNodes[i].KeyRange()
+				min2, _ := newNodes[i].KeyRange()
+				return Compare(min1, min2) < 0
+			}) {
+				return nil, we(ErrBadOrder)
+			}
 			return NewNodeSet(newNodes), nil
 		}
 
