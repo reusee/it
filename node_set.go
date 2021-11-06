@@ -2,11 +2,13 @@ package it
 
 import (
 	"io"
+	"math/rand"
 	"os"
 	"sort"
 )
 
 type NodeSet struct {
+	ID     int64
 	Nodes  []Node
 	MinKey Key
 	MaxKey Key
@@ -14,6 +16,7 @@ type NodeSet struct {
 
 func NewNodeSet(nodes []Node) *NodeSet {
 	set := &NodeSet{
+		ID:    rand.Int63(),
 		Nodes: nodes,
 	}
 	if len(nodes) > 0 {
@@ -24,6 +27,10 @@ func NewNodeSet(nodes []Node) *NodeSet {
 }
 
 var _ Node = new(NodeSet)
+
+func (n NodeSet) NodeID() int64 {
+	return n.ID
+}
 
 func (n NodeSet) KeyRange() (Key, Key) {
 	return n.MinKey, n.MaxKey

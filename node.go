@@ -5,6 +5,7 @@ import (
 )
 
 type Node interface {
+	NodeID() int64
 	KeyRange() (Key, Key)
 	Mutate(
 		ctx Scope,
