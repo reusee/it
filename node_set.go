@@ -137,7 +137,7 @@ func (n *NodeSet) Mutate(
 			newNodes = append(newNodes, nodes[i+1:]...)
 			return NewNodeSet(newNodes), nil
 
-		} else if newNode != nodes[i] {
+		} else if newNode.NodeID() != nodes[i].NodeID() {
 			// replace
 			newMin, newMax := newNode.KeyRange()
 			if newMin != min || newMax != max {
