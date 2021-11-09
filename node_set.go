@@ -1,6 +1,7 @@
 package it
 
 import (
+	"fmt"
 	"io"
 	"math/rand"
 	"os"
@@ -202,4 +203,59 @@ func (n NodeSet) Range(cont Src) Src {
 		}
 	}
 	return src
+}
+
+func (n *NodeSet) Merge(ctx Scope, node2 Node) (Node, error) {
+	if node2 == nil {
+		return n, nil
+	}
+	if n == nil {
+		return node2, nil
+	}
+	n2, ok := node2.(*NodeSet)
+	if !ok {
+		panic(fmt.Errorf("bad merge type: %T", node2))
+	}
+	if n2.NodeID() == n.NodeID() {
+		return n, nil
+	}
+
+	var nodes []Node
+	nodes1 := n.Nodes
+	nodes2 := n2.Nodes
+
+	for {
+		if len(nodes1) == 0 {
+			nodes = append(nodes, nodes2...)
+			break
+		}
+		if len(nodes2) == 0 {
+			nodes = append(nodes, nodes1...)
+			break
+		}
+		node1 := nodes1[0]
+		node2 := nodes2[0]
+		min1, _ := node1.KeyRange()
+		min2, _ := node2.KeyRange()
+		res := Compare(min1, min2)
+		if res < 0 {
+			nodes = append(nodes, node1)
+			nodes1 = nodes1[1:]
+			continue
+		}
+		if res > 0 {
+			nodes = append(nodes, node2)
+			nodes2 = nodes2[1:]
+			continue
+		}
+		node, err := node1.Merge(ctx, node2)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, node)
+		nodes1 = nodes1[1:]
+		nodes2 = nodes2[1:]
+	}
+
+	return NewNodeSet(nodes), nil
 }
