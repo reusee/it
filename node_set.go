@@ -29,8 +29,12 @@ func NewNodeSet(nodes []Node) *NodeSet {
 
 var _ Node = new(NodeSet)
 
-func (n NodeSet) NodeID() int64 {
-	return n.ID
+func (n *NodeSet) Equal(n2 Node) bool {
+	switch n2 := n2.(type) {
+	case *NodeSet:
+		return n.ID == n2.ID
+	}
+	return false
 }
 
 func (n NodeSet) KeyRange() (Key, Key) {
@@ -138,7 +142,7 @@ func (n *NodeSet) Mutate(
 			newNodes = append(newNodes, nodes[i+1:]...)
 			return NewNodeSet(newNodes), nil
 
-		} else if newNode.NodeID() != nodes[i].NodeID() {
+		} else if !newNode.Equal(nodes[i]) {
 			// replace
 			newMin, newMax := newNode.KeyRange()
 			if newMin != min || newMax != max {
@@ -174,19 +178,6 @@ func (n NodeSet) Dump(w io.Writer, level int) {
 	}
 }
 
-func (n NodeSet) Walk(cont Src) Src {
-	i := 0
-	var src Src
-	src = func() (any, Src, error) {
-		if i == len(n.Nodes) {
-			return nil, cont, nil
-		}
-		i++
-		return n.Nodes[i-1].Walk(src)()
-	}
-	return src
-}
-
 func (n NodeSet) Range(cont Src) Src {
 	i := 0
 	var src Src
@@ -197,7 +188,7 @@ func (n NodeSet) Range(cont Src) Src {
 		i++
 		switch node := n.Nodes[i-1].(type) {
 		case *NodeSet:
-			return node.Walk(src)()
+			return node.Range(src)()
 		default:
 			return node, src, nil
 		}
@@ -216,7 +207,7 @@ func (n *NodeSet) Merge(ctx Scope, node2 Node) (Node, error) {
 	if !ok {
 		panic(fmt.Errorf("bad merge type: %T", node2))
 	}
-	if n2.NodeID() == n.NodeID() {
+	if n2.Equal(n) {
 		return n, nil
 	}
 

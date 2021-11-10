@@ -5,7 +5,7 @@ import (
 )
 
 type Node interface {
-	NodeID() int64
+	Equal(node Node) bool
 	KeyRange() (Key, Key)
 	Mutate(
 		ctx Scope,
@@ -23,5 +23,4 @@ type Node interface {
 		err error,
 	)
 	Dump(w io.Writer, level int)
-	Walk(cont Src) Src
 }
