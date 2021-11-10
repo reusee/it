@@ -34,7 +34,7 @@ func (n *NodeSet) Equal(n2 Node) bool {
 	case *NodeSet:
 		return n.ID == n2.ID
 	}
-	return false
+	panic("bad type")
 }
 
 func (n NodeSet) KeyRange() (Key, Key) {
